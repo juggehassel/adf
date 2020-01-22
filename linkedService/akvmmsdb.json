@@ -1,0 +1,12 @@
+{
+	"name": "akvmmsdb",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "Secret for hno3admin",
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://akvsmmsprd.vault.azure.net/"
+		}
+	}
+}

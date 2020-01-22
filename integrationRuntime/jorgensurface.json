@@ -1,0 +1,7 @@
+{
+	"name": "jorgensurface",
+	"properties": {
+		"type": "SelfHosted",
+		"description": "This is  my own environment"
+	}
+}

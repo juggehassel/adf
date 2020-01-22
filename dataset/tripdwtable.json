@@ -1,0 +1,17 @@
+{
+	"name": "tripdwtable",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "TaxiDB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "tripdwtable"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,27 @@
+{
+	"name": "BinaryDataDestinationStore",
+	"properties": {
+		"description": "Connection to your data destination store.  ",
+		"linkedServiceName": {
+			"referenceName": "sammsbackup",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Container": {
+				"type": "string"
+			},
+			"Directory": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileSystem": "data"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

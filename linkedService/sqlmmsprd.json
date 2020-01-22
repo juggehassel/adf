@@ -1,0 +1,19 @@
+{
+	"name": "sqlmmsprd",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"connectionString": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "akvmmsdb",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "mmsdb-login",
+				"secretVersion": "4b2379f26c9b4412831e62eb2152166a"
+			}
+		}
+	}
+}

@@ -1,0 +1,25 @@
+{
+	"name": "TumblingWindowTest",
+	"properties": {
+		"description": "Just for testing tumbling windows",
+		"activities": [
+			{
+				"name": "Wait1",
+				"type": "Wait",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 10
+				}
+			}
+		],
+		"parameters": {
+			"startDate": {
+				"type": "string",
+				"defaultValue": "@trigger().outputs.windowStartTime"
+			}
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

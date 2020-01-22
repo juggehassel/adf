@@ -1,0 +1,55 @@
+{
+	"name": "OutPutEventCsv",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "CarsPlanesFiles",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"inputfilename": {
+				"type": "string",
+				"defaultValue": "@pipeline().parameters.inputfilename"
+			}
+		},
+		"folder": {
+			"name": "Parameterdemo"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@concat(dataset().inputfilename,'RUN.csv')",
+					"type": "Expression"
+				},
+				"container": "input"
+			},
+			"columnDelimiter": "|",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			},
+			{
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

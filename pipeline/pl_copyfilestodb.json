@@ -1,0 +1,197 @@
+{
+	"name": "pl_copyfilestodb",
+	"properties": {
+		"description": "parameter dem",
+		"activities": [
+			{
+				"name": "Backup Tables",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderStoredProcedureName": "[dbo].[myquery]",
+						"storedProcedureParameters": {
+							"mytablename": {
+								"type": "String",
+								"value": {
+									"value": "@pipeline().parameters.inputfilename",
+									"type": "Expression"
+								}
+							}
+						},
+						"queryTimeout": "02:00:00"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "carsPlanesTables",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "OutPutEventCsv",
+						"type": "DatasetReference",
+						"parameters": {
+							"inputfilename": {
+								"value": "@concat(pipeline().parameters.inputfilename,formatDateTime(utcnow()))",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "ifcarsrun",
+				"description": "If table parameter is cars run this",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Backup Tables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.inputfilename,'cars')",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy Files to Table_copy",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "SqlServerSink"
+								},
+								"enableStaging": false,
+								"parallelCopies": 1,
+								"dataIntegrationUnits": 2
+							},
+							"inputs": [
+								{
+									"referenceName": "OutPutEventCsv",
+									"type": "DatasetReference",
+									"parameters": {
+										"inputfilename": {
+											"value": "@pipeline().parameters.inputfilename",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "carsPlanesTables",
+									"type": "DatasetReference"
+								}
+							]
+						},
+						{
+							"name": "Copy Files to Table_copy_copy1",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "SqlServerSink"
+								},
+								"enableStaging": false,
+								"parallelCopies": 1,
+								"dataIntegrationUnits": 2
+							},
+							"inputs": [
+								{
+									"referenceName": "OutPutEventCsv",
+									"type": "DatasetReference",
+									"parameters": {
+										"inputfilename": {
+											"value": "@pipeline().parameters.inputfilename",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "carsPlanesTables",
+									"type": "DatasetReference"
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"inputfilename": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Parameterdemo"
+		},
+		"annotations": []
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

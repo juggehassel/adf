@@ -1,0 +1,28 @@
+{
+	"name": "EventFlag",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "TriggerEventPipeLine",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"inputfilename": "event.csv"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/input/blobs/",
+			"blobPathEndsWith": "flag.csv",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/d55eff59-e246-4bd5-a62d-3f59330db1d1/resourceGroups/rgmmsprd/providers/Microsoft.Storage/storageAccounts/sammsprd",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}
