@@ -1,6 +1,7 @@
 {
-	"name": "dataflow1",
+	"name": "MoviesSample",
 	"properties": {
+		"description": "https://docs.microsoft.com/en-us/azure/data-factory/tutorial-data-flow ",
 		"type": "MappingDataFlow",
 		"typeProperties": {
 			"sources": [
