@@ -1,0 +1,618 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "dfmmsprd"
+		},
+		"EventFlag_properties_TriggerEventPipeLine_parameters_inputfilename": {
+			"type": "string",
+			"defaultValue": "event.csv"
+		},
+		"EventFlag_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/d55eff59-e246-4bd5-a62d-3f59330db1d1/resourceGroups/rgmmsprd/providers/Microsoft.Storage/storageAccounts/sammsprd"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/IngestAndTransformData')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "MS Demo",
+				"activities": [
+					{
+						"name": "IngestIntoADLS",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings",
+									"maxConcurrentConnections": 1
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".csv"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 1,
+							"dataIntegrationUnits": 2
+						},
+						"inputs": [
+							{
+								"referenceName": "TripData",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "TripDataCSV",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "JoinAndAggregateData",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "IngestIntoADLS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "JoinAndAggregateData",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"TripDataCSV": {},
+									"TripFaresSQL": {},
+									"SQLDWsink": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							}
+						}
+					}
+				],
+				"variables": {
+					"Updated": {
+						"type": "String"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SelfHostedRuntime')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This shows how to get data from an on prem data source. In this case the adventureworksdw database dimaccount",
+				"activities": [
+					{
+						"name": "CopyFromLocalserverToAzure",
+						"description": "From my on prem server to azure db",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "truncate table dbo.dimaccount",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"parallelCopies": 1,
+							"enableSkipIncompatibleRow": true,
+							"dataIntegrationUnits": 2,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "AccountKey",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "AccountKey",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "ParentAccountKey",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "ParentAccountKey",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountCodeAlternateKey",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "AccountCodeAlternateKey",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "ParentAccountCodeAlternateKey",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "ParentAccountCodeAlternateKey",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountDescription",
+											"type": "String"
+										},
+										"sink": {
+											"name": "AccountDescription",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountType",
+											"type": "String"
+										},
+										"sink": {
+											"name": "AccountType",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "Operator",
+											"type": "String"
+										},
+										"sink": {
+											"name": "Operator",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomMembers",
+											"type": "String"
+										},
+										"sink": {
+											"name": "CustomMembers",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "ValueType",
+											"type": "String"
+										},
+										"sink": {
+											"name": "ValueType",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomMemberOptions",
+											"type": "String"
+										},
+										"sink": {
+											"name": "CustomMemberOptions",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DimAccount",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DimAccountAzure",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_copyfilestodb')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "parameter dem",
+				"activities": [
+					{
+						"name": "Backup Tables",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[myquery]",
+								"storedProcedureParameters": {
+									"mytablename": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.inputfilename",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "carsPlanesTables",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "OutPutEventCsv",
+								"type": "DatasetReference",
+								"parameters": {
+									"inputfilename": {
+										"value": "@concat(pipeline().parameters.inputfilename,formatDateTime(utcnow()))",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					},
+					{
+						"name": "ifcarsrun",
+						"description": "If table parameter is cars run this",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Backup Tables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(pipeline().parameters.inputfilename,'cars')",
+								"type": "Expression"
+							},
+							"ifTrueActivities": [
+								{
+									"name": "Copy Files to Table_copy",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "SqlServerSink"
+										},
+										"enableStaging": false,
+										"parallelCopies": 1,
+										"dataIntegrationUnits": 2
+									},
+									"inputs": [
+										{
+											"referenceName": "OutPutEventCsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"inputfilename": {
+													"value": "@pipeline().parameters.inputfilename",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "carsPlanesTables",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "Copy Files to Table_copy_copy1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "SqlServerSink"
+										},
+										"enableStaging": false,
+										"parallelCopies": 1,
+										"dataIntegrationUnits": 2
+									},
+									"inputs": [
+										{
+											"referenceName": "OutPutEventCsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"inputfilename": {
+													"value": "@pipeline().parameters.inputfilename",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "carsPlanesTables",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"inputfilename": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "Parameterdemo"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EventFlag')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "TriggerEventPipeLine",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"inputfilename": "[parameters('EventFlag_properties_TriggerEventPipeLine_parameters_inputfilename')]"
+						}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/input/blobs/",
+					"blobPathEndsWith": "flag.csv",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('EventFlag_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/MovieSamplePipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "MoviesSample",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "MoviesSample",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"MoviesDB": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							}
+						}
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Generic SCD Type1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "https://techcommunity.microsoft.com/t5/Azure-Data-Factory/Create-Generic-SCD-Pattern-in-ADF-Mapping-Data-Flows/ba-p/918519",
+				"activities": [
+					{
+						"name": "SCD Type1 Generic",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "scdT1Generic",
+								"type": "DataFlowReference",
+								"parameters": {
+									"dimname": "'dimprods'",
+									"keycol": "'ProductNumber'",
+									"SurrogateKey": "'ProductID'",
+									"tablename": "'DimProducts'"
+								},
+								"datasetParameters": {
+									"NewMembers1": {
+										"filename": "DimProducts.csv"
+									},
+									"ExistingMembers": {
+										"tablename": "DimProducts"
+									},
+									"SetMaxKey": {
+										"tablename": "DimProducts"
+									},
+									"sink1": {
+										"tablename": "DimProducts"
+									},
+									"sink2": {
+										"tablename": "DimProducts"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							}
+						}
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": []
+		}
+	]
+}

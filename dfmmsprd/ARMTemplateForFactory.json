@@ -1,0 +1,2657 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "dfmmsprd"
+		},
+		"AdventureWorksLT_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AdventureWorksLT'"
+		},
+		"AdventureworksDWLOCAL_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AdventureworksDWLOCAL'"
+		},
+		"CarsPlanesFiles_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'CarsPlanesFiles'"
+		},
+		"TaxiDB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'TaxiDB'"
+		},
+		"dlmms_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'dlmms'"
+		},
+		"sammsbackup_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'sammsbackup'"
+		},
+		"akvmmsdb_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://akvsmmsprd.vault.azure.net/"
+		},
+		"dlmms_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://sammsprd.dfs.core.windows.net"
+		},
+		"sammsbackup_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://sammsbackup.dfs.core.windows.net"
+		},
+		"sqlmmsprd_properties_typeProperties_connectionString_secretName": {
+			"type": "string",
+			"defaultValue": "mmsdb-login"
+		},
+		"EventFlag_properties_TriggerEventPipeLine_parameters_inputfilename": {
+			"type": "string",
+			"defaultValue": "event.csv"
+		},
+		"EventFlag_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/d55eff59-e246-4bd5-a62d-3f59330db1d1/resourceGroups/rgmmsprd/providers/Microsoft.Storage/storageAccounts/sammsprd"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyEmpFileToDb')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ac_copyfiletoempDb",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [
+							{
+								"name": "Source",
+								"value": "salesdata/sales/2020/202001/emp.txt"
+							},
+							{
+								"name": "Destination",
+								"value": "dbo.emp"
+							}
+						],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": false,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings",
+									"skipLineCount": 0
+								}
+							},
+							"sink": {
+								"type": "SqlServerSink"
+							},
+							"enableStaging": false,
+							"enableSkipIncompatibleRow": true,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"type": "String",
+											"ordinal": 1
+										},
+										"sink": {
+											"name": "FirstName"
+										}
+									},
+									{
+										"source": {
+											"type": "String",
+											"ordinal": 2
+										},
+										"sink": {
+											"name": "LastName",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "EmpTxt",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "EmpTable",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/EmpTxt')]",
+				"[concat(variables('factoryId'), '/datasets/EmpTable')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyNewFilesByLastModifiedDate')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Copy new and changed files only by using LastModifiedDate",
+				"activities": [
+					{
+						"name": "CopyNewFiles",
+						"description": "Copy new and changed files only by using LastModifiedDate",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "BinarySource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"wildcardFileName": {
+										"value": "*",
+										"type": "Expression"
+									},
+									"modifiedDatetimeStart": {
+										"value": "@{pipeline().parameters.LastModified_From}",
+										"type": "Expression"
+									},
+									"modifiedDatetimeEnd": {
+										"value": "@{pipeline().parameters.LastModified_To}",
+										"type": "Expression"
+									}
+								}
+							},
+							"sink": {
+								"type": "BinarySink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "BinaryDataSourceStore",
+								"type": "DatasetReference",
+								"parameters": {
+									"Container": {
+										"value": "@pipeline().parameters.FolderPath_Source",
+										"type": "Expression"
+									},
+									"Directory": {
+										"value": "@pipeline().parameters.Directory_Source",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "BinaryDataDestinationStore",
+								"type": "DatasetReference",
+								"parameters": {
+									"Container": {
+										"value": "@pipeline().parameters.FolderPath_Destination",
+										"type": "Expression"
+									},
+									"Directory": {
+										"value": "@pipeline().parameters.Directory_Destination",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"parameters": {
+					"FolderPath_Source": {
+						"type": "String",
+						"defaultValue": "sourcefolder"
+					},
+					"Directory_Source": {
+						"type": "String",
+						"defaultValue": "subfolder"
+					},
+					"FolderPath_Destination": {
+						"type": "String",
+						"defaultValue": "destinationfolder"
+					},
+					"Directory_Destination": {
+						"type": "String",
+						"defaultValue": "subfolder"
+					},
+					"LastModified_From": {
+						"type": "String",
+						"defaultValue": "2019-02-01T00:00:00Z"
+					},
+					"LastModified_To": {
+						"type": "String",
+						"defaultValue": "2019-03-01T00:00:00Z"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/BinaryDataSourceStore')]",
+				"[concat(variables('factoryId'), '/datasets/BinaryDataDestinationStore')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/IngestAndTransformData')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "MS Demo",
+				"activities": [
+					{
+						"name": "IngestIntoADLS",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings",
+									"maxConcurrentConnections": 1
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".csv"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 1,
+							"dataIntegrationUnits": 2
+						},
+						"inputs": [
+							{
+								"referenceName": "TripData",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "TripDataCSV",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "JoinAndAggregateData",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "IngestIntoADLS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "JoinAndAggregateData",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"TripDataCSV": {},
+									"TripFaresSQL": {},
+									"SQLDWsink": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							}
+						}
+					}
+				],
+				"variables": {
+					"Updated": {
+						"type": "String"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/TripData')]",
+				"[concat(variables('factoryId'), '/datasets/TripDataCSV')]",
+				"[concat(variables('factoryId'), '/dataflows/JoinAndAggregateData')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SelfHostedRuntime')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This shows how to get data from an on prem data source. In this case the adventureworksdw database dimaccount",
+				"activities": [
+					{
+						"name": "CopyFromLocalserverToAzure",
+						"description": "From my on prem server to azure db",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"preCopyScript": "truncate table dbo.dimaccount",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"parallelCopies": 1,
+							"enableSkipIncompatibleRow": true,
+							"dataIntegrationUnits": 2,
+							"translator": {
+								"type": "TabularTranslator",
+								"mappings": [
+									{
+										"source": {
+											"name": "AccountKey",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "AccountKey",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "ParentAccountKey",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "ParentAccountKey",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountCodeAlternateKey",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "AccountCodeAlternateKey",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "ParentAccountCodeAlternateKey",
+											"type": "Int32"
+										},
+										"sink": {
+											"name": "ParentAccountCodeAlternateKey",
+											"type": "Int32"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountDescription",
+											"type": "String"
+										},
+										"sink": {
+											"name": "AccountDescription",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "AccountType",
+											"type": "String"
+										},
+										"sink": {
+											"name": "AccountType",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "Operator",
+											"type": "String"
+										},
+										"sink": {
+											"name": "Operator",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomMembers",
+											"type": "String"
+										},
+										"sink": {
+											"name": "CustomMembers",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "ValueType",
+											"type": "String"
+										},
+										"sink": {
+											"name": "ValueType",
+											"type": "String"
+										}
+									},
+									{
+										"source": {
+											"name": "CustomMemberOptions",
+											"type": "String"
+										},
+										"sink": {
+											"name": "CustomMemberOptions",
+											"type": "String"
+										}
+									}
+								]
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DimAccount",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DimAccountAzure",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DimAccount')]",
+				"[concat(variables('factoryId'), '/datasets/DimAccountAzure')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TriggerEventPipeLine')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This is just used for testing event based pipelines",
+				"activities": [
+					{
+						"name": "CopyEventCsvToFinalCSV",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 1,
+							"dataIntegrationUnits": 2
+						},
+						"inputs": [
+							{
+								"referenceName": "InputEventCsv",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "OutPutEventCsv",
+								"type": "DatasetReference",
+								"parameters": {
+									"inputfilename": "@pipeline().parameters.inputfilename"
+								}
+							}
+						]
+					}
+				],
+				"parameters": {
+					"inputfilename": {
+						"type": "string",
+						"defaultValue": "event.csv"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/InputEventCsv')]",
+				"[concat(variables('factoryId'), '/datasets/OutPutEventCsv')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TumblingWindowTest')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Just for testing tumbling windows",
+				"activities": [
+					{
+						"name": "Wait1",
+						"type": "Wait",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": 10
+						}
+					}
+				],
+				"parameters": {
+					"startDate": {
+						"type": "string",
+						"defaultValue": "@trigger().outputs.windowStartTime"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_copyfilestodb')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "parameter dem",
+				"activities": [
+					{
+						"name": "Backup Tables",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderStoredProcedureName": "[[dbo].[myquery]",
+								"storedProcedureParameters": {
+									"mytablename": {
+										"type": "String",
+										"value": {
+											"value": "@pipeline().parameters.inputfilename",
+											"type": "Expression"
+										}
+									}
+								},
+								"queryTimeout": "02:00:00"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "carsPlanesTables",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "OutPutEventCsv",
+								"type": "DatasetReference",
+								"parameters": {
+									"inputfilename": {
+										"value": "@concat(pipeline().parameters.inputfilename,formatDateTime(utcnow()))",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					},
+					{
+						"name": "ifcarsrun",
+						"description": "If table parameter is cars run this",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Backup Tables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@equals(pipeline().parameters.inputfilename,'cars')",
+								"type": "Expression"
+							},
+							"ifTrueActivities": [
+								{
+									"name": "Copy Files to Table_copy",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "SqlServerSink"
+										},
+										"enableStaging": false,
+										"parallelCopies": 1,
+										"dataIntegrationUnits": 2
+									},
+									"inputs": [
+										{
+											"referenceName": "OutPutEventCsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"inputfilename": {
+													"value": "@pipeline().parameters.inputfilename",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "carsPlanesTables",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "Copy Files to Table_copy_copy1",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "SqlServerSink"
+										},
+										"enableStaging": false,
+										"parallelCopies": 1,
+										"dataIntegrationUnits": 2
+									},
+									"inputs": [
+										{
+											"referenceName": "OutPutEventCsv",
+											"type": "DatasetReference",
+											"parameters": {
+												"inputfilename": {
+													"value": "@pipeline().parameters.inputfilename",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "carsPlanesTables",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"inputfilename": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "Parameterdemo"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/carsPlanesTables')]",
+				"[concat(variables('factoryId'), '/datasets/OutPutEventCsv')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinaryDataDestinationStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Connection to your data destination store.  ",
+				"linkedServiceName": {
+					"referenceName": "sammsbackup",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Container": {
+						"type": "string"
+					},
+					"Directory": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "data"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/sammsbackup')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinaryDataSourceStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Connection to your data source store. ",
+				"linkedServiceName": {
+					"referenceName": "CarsPlanesFiles",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Container": {
+						"type": "string"
+					},
+					"Directory": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "input"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/CarsPlanesFiles')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Customer')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AdventureWorksLT",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "CustomerID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "NameStyle",
+						"type": "bit"
+					},
+					{
+						"name": "Title",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FirstName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MiddleName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "LastName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Suffix",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CompanyName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "SalesPerson",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EmailAddress",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Phone",
+						"type": "nvarchar"
+					},
+					{
+						"name": "PasswordHash",
+						"type": "varchar"
+					},
+					{
+						"name": "PasswordSalt",
+						"type": "varchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "SalesLT",
+					"table": "Customer"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AdventureWorksLT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimAccount')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AdventureworksDWLOCAL",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [
+					{
+						"name": "AccountKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ParentAccountKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AccountCodeAlternateKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ParentAccountCodeAlternateKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AccountDescription",
+						"type": "nvarchar"
+					},
+					{
+						"name": "AccountType",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Operator",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CustomMembers",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValueType",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CustomMemberOptions",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "DimAccount"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AdventureworksDWLOCAL')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimAccountAzure')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TaxiDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "AccountKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ParentAccountKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AccountCodeAlternateKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ParentAccountCodeAlternateKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "AccountDescription",
+						"type": "nvarchar"
+					},
+					{
+						"name": "AccountType",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Operator",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CustomMembers",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ValueType",
+						"type": "nvarchar"
+					},
+					{
+						"name": "CustomMemberOptions",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "DimAccount"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/TaxiDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DimCustomer')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "sqlmmsprd",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [
+					{
+						"name": "CustomerKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "GeographyKey",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "CustomerAlternateKey",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Title",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FirstName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "MiddleName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "LastName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "NameStyle",
+						"type": "bit"
+					},
+					{
+						"name": "BirthDate",
+						"type": "date"
+					},
+					{
+						"name": "MaritalStatus",
+						"type": "nchar"
+					},
+					{
+						"name": "Suffix",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Gender",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EmailAddress",
+						"type": "nvarchar"
+					},
+					{
+						"name": "YearlyIncome",
+						"type": "money",
+						"precision": 19,
+						"scale": 4
+					},
+					{
+						"name": "TotalChildren",
+						"type": "tinyint",
+						"precision": 3
+					},
+					{
+						"name": "NumberChildrenAtHome",
+						"type": "tinyint",
+						"precision": 3
+					},
+					{
+						"name": "EnglishEducation",
+						"type": "nvarchar"
+					},
+					{
+						"name": "SpanishEducation",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FrenchEducation",
+						"type": "nvarchar"
+					},
+					{
+						"name": "EnglishOccupation",
+						"type": "nvarchar"
+					},
+					{
+						"name": "SpanishOccupation",
+						"type": "nvarchar"
+					},
+					{
+						"name": "FrenchOccupation",
+						"type": "nvarchar"
+					},
+					{
+						"name": "HouseOwnerFlag",
+						"type": "nchar"
+					},
+					{
+						"name": "NumberCarsOwned",
+						"type": "tinyint",
+						"precision": 3
+					},
+					{
+						"name": "AddressLine1",
+						"type": "nvarchar"
+					},
+					{
+						"name": "AddressLine2",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Phone",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DateFirstPurchase",
+						"type": "date"
+					},
+					{
+						"name": "CommuteDistance",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "DimCustomer"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/sqlmmsprd')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EmpTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "sqlmmsprd",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [
+					{
+						"name": "FirstName",
+						"type": "varchar"
+					},
+					{
+						"name": "LastName",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "emp"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/sqlmmsprd')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EmpTxt')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "emp.txt",
+						"folderPath": "sales/2020/202001",
+						"fileSystem": "salesdata"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": false,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dlmms')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/InputEventCsv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "CarsPlanesFiles",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "event.csv",
+						"container": "input"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/CarsPlanesFiles')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/OutPutEventCsv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "CarsPlanesFiles",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"inputfilename": {
+						"type": "string",
+						"defaultValue": "@pipeline().parameters.inputfilename"
+					}
+				},
+				"folder": {
+					"name": "Parameterdemo"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@concat(dataset().inputfilename,'RUN.csv')",
+							"type": "Expression"
+						},
+						"container": "input"
+					},
+					"columnDelimiter": "|",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					},
+					{
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/CarsPlanesFiles')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TripData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TaxiDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "medallion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "hack_license",
+						"type": "nvarchar"
+					},
+					{
+						"name": "vendor_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "rate_code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "store_and_fwd_flag",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pickup_datetime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "dropoff_datetime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "passenger_count",
+						"type": "nvarchar"
+					},
+					{
+						"name": "trip_time_in_secs",
+						"type": "nvarchar"
+					},
+					{
+						"name": "trip_distance",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pickup_longitude",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pickup_latitude",
+						"type": "nvarchar"
+					},
+					{
+						"name": "dropoff_longitude",
+						"type": "nvarchar"
+					},
+					{
+						"name": "dropoff_latitude",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "TripData"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/TaxiDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TripDataCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "@concat(addhours(utcnow(),1),'.csv')",
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "tripdata.csv",
+							"type": "Expression"
+						},
+						"fileSystem": "taxidata"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "medallion",
+						"type": "String"
+					},
+					{
+						"name": "hack_license",
+						"type": "String"
+					},
+					{
+						"name": "vendor_id",
+						"type": "String"
+					},
+					{
+						"name": "rate_code",
+						"type": "String"
+					},
+					{
+						"name": "store_and_fwd_flag",
+						"type": "String"
+					},
+					{
+						"name": "pickup_datetime",
+						"type": "String"
+					},
+					{
+						"name": "dropoff_datetime",
+						"type": "String"
+					},
+					{
+						"name": "passenger_count",
+						"type": "String"
+					},
+					{
+						"name": "trip_time_in_secs",
+						"type": "String"
+					},
+					{
+						"name": "trip_distance",
+						"type": "String"
+					},
+					{
+						"name": "pickup_longitude",
+						"type": "String"
+					},
+					{
+						"name": "pickup_latitude",
+						"type": "String"
+					},
+					{
+						"name": "dropoff_longitude",
+						"type": "String"
+					},
+					{
+						"name": "dropoff_latitude",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dlmms')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TripFaresSQL')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TaxiDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "medallion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "hack_license",
+						"type": "nvarchar"
+					},
+					{
+						"name": "vendor_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pickup_datetime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "payment_type",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fare_amount",
+						"type": "nvarchar"
+					},
+					{
+						"name": "surcharge",
+						"type": "nvarchar"
+					},
+					{
+						"name": "mta_tax",
+						"type": "nvarchar"
+					},
+					{
+						"name": "tip_amount",
+						"type": "nvarchar"
+					},
+					{
+						"name": "tolls_amount",
+						"type": "nvarchar"
+					},
+					{
+						"name": "total_amount",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "TripFares"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/TaxiDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/carsPlanesTables')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "sqlmmsprd",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "Parameterdemo"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [
+					{
+						"name": "Make",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Model",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Type",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Origin",
+						"type": "nvarchar"
+					},
+					{
+						"name": "DriveTrain",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Length",
+						"type": "decimal",
+						"precision": 18,
+						"scale": 0
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "Cars"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/sqlmmsprd')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/moviesDBcsv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "moviesDB.csv",
+						"fileSystem": "sample-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "movie",
+						"type": "String"
+					},
+					{
+						"name": "title",
+						"type": "String"
+					},
+					{
+						"name": "genres",
+						"type": "String"
+					},
+					{
+						"name": "year",
+						"type": "String"
+					},
+					{
+						"name": "Rating",
+						"type": "String"
+					},
+					{
+						"name": "Rotton Tomato",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dlmms')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tripdwtable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TaxiDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "tripdwtable"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/TaxiDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AdventureWorksLT')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('AdventureWorksLT_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AdventureworksDWLOCAL')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "SqlServer",
+				"typeProperties": {
+					"connectionString": "[parameters('AdventureworksDWLOCAL_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "jorgensurface",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/jorgensurface')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CarsPlanesFiles')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Demo when using parameters",
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('CarsPlanesFiles_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TaxiDB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"connectionString": "[parameters('TaxiDB_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/akvmmsdb')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Secret for hno3admin",
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('akvmmsdb_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/dlmms')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('dlmms_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('dlmms_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sammsbackup')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('sammsbackup_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('sammsbackup_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/sqlmmsprd')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "SqlServer",
+				"typeProperties": {
+					"connectionString": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "akvmmsdb",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "[parameters('sqlmmsprd_properties_typeProperties_connectionString_secretName')]",
+						"secretVersion": "4b2379f26c9b4412831e62eb2152166a"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/akvmmsdb')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EventFlag')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "TriggerEventPipeLine",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"inputfilename": "[parameters('EventFlag_properties_TriggerEventPipeLine_parameters_inputfilename')]"
+						}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/input/blobs/",
+					"blobPathEndsWith": "flag.csv",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('EventFlag_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/TriggerEventPipeLine')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/EveryMorning0800')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2020-01-22T12:34:00Z",
+						"endTime": "2020-01-25T12:34:00Z",
+						"timeZone": "UTC",
+						"schedule": {
+							"hours": [
+								8
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TumblingWindow')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipeline": {
+					"pipelineReference": {
+						"referenceName": "TumblingWindowTest",
+						"type": "PipelineReference"
+					},
+					"parameters": {}
+				},
+				"type": "TumblingWindowTrigger",
+				"typeProperties": {
+					"frequency": "Minute",
+					"interval": 15,
+					"startTime": "2020-01-22T13:57:00Z",
+					"endTime": "2020-01-23T14:59:00Z",
+					"delay": "00:00:00",
+					"maxConcurrency": 50,
+					"retryPolicy": {
+						"intervalInSeconds": 30
+					},
+					"dependsOn": []
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/TumblingWindowTest')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/jorgensurface')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"description": "This is  my own environment",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/JoinAndAggregateData')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "TripDataCSV",
+								"type": "DatasetReference"
+							},
+							"name": "TripDataCSV",
+							"typeProperties": {}
+						},
+						{
+							"dataset": {
+								"referenceName": "TripFaresSQL",
+								"type": "DatasetReference"
+							},
+							"name": "TripFaresSQL",
+							"typeProperties": {}
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "tripdwtable",
+								"type": "DatasetReference"
+							},
+							"name": "SQLDWsink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "InnerJoinWithTripFares"
+						},
+						{
+							"name": "AggregateByPaymentType"
+						}
+					],
+					"script": "\n\nsource(output(\n\t\tmedallion as string,\n\t\thack_license as string,\n\t\tvendor_id as string,\n\t\trate_code as string,\n\t\tstore_and_fwd_flag as string,\n\t\tpickup_datetime as string,\n\t\tdropoff_datetime as string,\n\t\tpassenger_count as string,\n\t\ttrip_time_in_secs as string,\n\t\ttrip_distance as string,\n\t\tpickup_longitude as string,\n\t\tpickup_latitude as string,\n\t\tdropoff_longitude as string,\n\t\tdropoff_latitude as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false) ~> TripDataCSV\nsource(output(\n\t\tmedallion as string,\n\t\thack_license as string,\n\t\tvendor_id as string,\n\t\tpickup_datetime as string,\n\t\tpayment_type as string,\n\t\tfare_amount as string,\n\t\tsurcharge as string,\n\t\tmta_tax as string,\n\t\ttip_amount as string,\n\t\ttolls_amount as string,\n\t\ttotal_amount as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> TripFaresSQL\nTripDataCSV, TripFaresSQL join(TripDataCSV@medallion == TripFaresSQL@medallion\n\t&& TripDataCSV@hack_license == TripFaresSQL@hack_license\n\t&& TripDataCSV@vendor_id == TripFaresSQL@vendor_id\n\t&& TripDataCSV@pickup_datetime == TripFaresSQL@pickup_datetime,\n\tjoinType:'inner',\n\tbroadcast: 'none')~> InnerJoinWithTripFares\nInnerJoinWithTripFares aggregate(groupBy(payment_type),\n\taverage_fare = avg(toInteger(total_amount)),\n\t\ttotal_trip_distance = sum(toInteger(trip_distance))) ~> AggregateByPaymentType\nAggregateByPaymentType sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\trecreate:true,\n\tformat: 'table') ~> SQLDWsink"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/TripDataCSV')]",
+				"[concat(variables('factoryId'), '/datasets/TripFaresSQL')]",
+				"[concat(variables('factoryId'), '/datasets/tripdwtable')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/MoviesSample')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "https://docs.microsoft.com/en-us/azure/data-factory/tutorial-data-flow ",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "moviesDBcsv",
+								"type": "DatasetReference"
+							},
+							"name": "MoviesDB",
+							"typeProperties": {}
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "MoviesSink",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "Filter1"
+						},
+						{
+							"name": "AggregateComedyRatings"
+						}
+					],
+					"script": "\n\nsource(output(\n\t\tmovie as string,\n\t\ttitle as string,\n\t\tgenres as string,\n\t\tyear as string,\n\t\tRating as string,\n\t\t{Rotton Tomato} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false) ~> MoviesDB\nMoviesDB filter(toInteger(year) >= 1910 && toInteger(year) <= 2000 && rlike(genres, 'Comedy')) ~> Filter1\nFilter1 aggregate(groupBy(year),\n\tAggregateComedyRatings = avg(toInteger(Rating))) ~> AggregateComedyRatings\nAggregateComedyRatings sink(input(\n\t\tmovie as string,\n\t\ttitle as string,\n\t\tgenres as string,\n\t\tyear as string,\n\t\tRating as string,\n\t\t{Rotton Tomato} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionBy('hash', 1)) ~> sink1"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/moviesDBcsv')]",
+				"[concat(variables('factoryId'), '/datasets/MoviesSink')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/MoviesSink')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "sample-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "movie",
+						"type": "String"
+					},
+					{
+						"name": "title",
+						"type": "String"
+					},
+					{
+						"name": "genres",
+						"type": "String"
+					},
+					{
+						"name": "year",
+						"type": "String"
+					},
+					{
+						"name": "Rating",
+						"type": "String"
+					},
+					{
+						"name": "Rotton Tomato",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dlmms')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/MovieSamplePipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "MoviesSample",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "MoviesSample",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"MoviesDB": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							}
+						}
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/MoviesSample')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BlobInputFolder')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "CarsPlanesFiles",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"filename": {
+						"type": "string",
+						"defaultValue": "DimProducts.csv"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().filename",
+							"type": "Expression"
+						},
+						"folderPath": "SampleData/AW",
+						"container": "mycontainer"
+					},
+					"columnDelimiter": "|",
+					"encodingName": "UTF-8",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/CarsPlanesFiles')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ParameterTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TaxiDB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"tablename": {
+						"type": "string",
+						"defaultValue": "DimProducts"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().tablename",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/TaxiDB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/scdT1Generic')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "This is a generalized Slowly Changing Dimension Type 1 that is parameterized to work against different dimension tables and dimension types.",
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "BlobInputFolder",
+								"type": "DatasetReference"
+							},
+							"name": "NewMembers1",
+							"typeProperties": {}
+						},
+						{
+							"dataset": {
+								"referenceName": "ParameterTable",
+								"type": "DatasetReference"
+							},
+							"name": "ExistingMembers",
+							"typeProperties": {}
+						},
+						{
+							"dataset": {
+								"referenceName": "ParameterTable",
+								"type": "DatasetReference"
+							},
+							"name": "SetMaxKey",
+							"typeProperties": {}
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "ParameterTable",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						},
+						{
+							"dataset": {
+								"referenceName": "ParameterTable",
+								"type": "DatasetReference"
+							},
+							"name": "sink2"
+						}
+					],
+					"transformations": [
+						{
+							"name": "PickCols1"
+						},
+						{
+							"name": "PickCols2"
+						},
+						{
+							"name": "Lookup1"
+						},
+						{
+							"name": "checkMatch"
+						},
+						{
+							"name": "UpdateSetAttrs"
+						},
+						{
+							"name": "MapDrifted1",
+							"description": "Creates an explicit mapping for each drifted column"
+						},
+						{
+							"name": "isMatching"
+						},
+						{
+							"name": "AlterRow1"
+						},
+						{
+							"name": "SurrogateKey1"
+						},
+						{
+							"name": "InsertSetAttrs"
+						},
+						{
+							"name": "Join1"
+						},
+						{
+							"name": "SetCols"
+						}
+					],
+					"script": "\nparameters{\n\tdimname as string ('dimprods'),\n\tkeycol as string ('ProductNumber'),\n\tSurrogateKey as string ('ProductID'),\n\ttablename as string ('DimProducts')\n}\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinferDriftedColumnTypes: true) ~> NewMembers1\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinferDriftedColumnTypes: true,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ExistingMembers\nsource(output(\n\t\tmaxsk as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tquery: (concat('select max(',$SurrogateKey,') as maxsk from ',$tablename)),\n\tformat: 'query') ~> SetMaxKey\nNewMembers1 derive(businesskey1 = toString(byPosition(2)),\n\t\tname1 = toString(byPosition(6))) ~> PickCols1\nExistingMembers derive(each(match(instr(name,'ID')>0), 'surrogatekey2' = toInteger($$)),\n\t\teach(match(instr(name,'Number')>0), 'businesskey2' = toString($$))) ~> PickCols2\nPickCols1, MapDrifted1 lookup(businesskey1 == businesskey2,\n\tbroadcast: 'none')~> Lookup1\nisMatching split(match,\n\tdisjoint: false) ~> checkMatch@(isMatch, noMatch)\ncheckMatch@isMatch derive({_LastUpdated} = currentTimestamp(),\n\t\tDWhash = sha2(256,name1)) ~> UpdateSetAttrs\nPickCols2 derive(ProductID = toInteger(byName('ProductID')),\n\t\tName = toString(byName('Name')),\n\t\tProductNumber = toString(byName('ProductNumber')),\n\t\tColor = toString(byName('Color')),\n\t\tStandardCost = toDecimal(byName('StandardCost')),\n\t\tListPrice = toDecimal(byName('ListPrice')),\n\t\t{_Inserted} = toTimestamp(byName('_Inserted')),\n\t\t{_LastUpdated} = toTimestamp(byName('_LastUpdated')),\n\t\tDWhash = toString(byName('DWhash')),\n\t\tsurrogatekey2 = toInteger(byName('surrogatekey2')),\n\t\tbusinesskey2 = toString(byName('businesskey2'))) ~> MapDrifted1\nLookup1 derive(match = isMatch()) ~> isMatching\nUpdateSetAttrs alterRow(updateIf(true())) ~> AlterRow1\ncheckMatch@noMatch keyGenerate(output(surrogatekey2 as long),\n\tstartAt: 1L) ~> SurrogateKey1\nJoin1 derive(surrogatekey2 = surrogatekey2 + maxsk,\n\t\t{_LastUpdated} = currentTimestamp(),\n\t\t{_Inserted} = currentTimestamp(),\n\t\tDWhash = sha2(256,name1)) ~> InsertSetAttrs\nSurrogateKey1, SetMaxKey join(true(),\n\tjoinType:'cross',\n\tbroadcast: 'none')~> Join1\nInsertSetAttrs select(mapColumn(\n\t\tName = name1,\n\t\t{_Inserted},\n\t\t{_LastUpdated},\n\t\teach(match(name=='surrogatekey2'),\n\t\t\t$SurrogateKey+'' = $$),\n\t\teach(match(name=='businesskey1'),\n\t\t\t$keycol+'' = $$)\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SetCols\nAlterRow1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:[($keycol)],\n\tformat: 'table',\n\tmapColumn(\n\t\teach(patternMatch(`.*[^_]$`))\n\t),\n\tpartitionBy('hash', 1)) ~> sink1\nSetCols sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table') ~> sink2"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/BlobInputFolder')]",
+				"[concat(variables('factoryId'), '/datasets/ParameterTable')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Generic SCD Type1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "https://techcommunity.microsoft.com/t5/Azure-Data-Factory/Create-Generic-SCD-Pattern-in-ADF-Mapping-Data-Flows/ba-p/918519",
+				"activities": [
+					{
+						"name": "SCD Type1 Generic",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "scdT1Generic",
+								"type": "DataFlowReference",
+								"parameters": {
+									"dimname": "'dimprods'",
+									"keycol": "'ProductNumber'",
+									"SurrogateKey": "'ProductID'",
+									"tablename": "'DimProducts'"
+								},
+								"datasetParameters": {
+									"NewMembers1": {
+										"filename": "DimProducts.csv"
+									},
+									"ExistingMembers": {
+										"tablename": "DimProducts"
+									},
+									"SetMaxKey": {
+										"tablename": "DimProducts"
+									},
+									"sink1": {
+										"tablename": "DimProducts"
+									},
+									"sink2": {
+										"tablename": "DimProducts"
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							}
+						}
+					}
+				],
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/scdT1Generic')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinarySourceFileStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Connection to your source data store.",
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string"
+					},
+					"directory": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().directory",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/dlmms')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BinarySinkFileStore')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Connection to your destination data store.",
+				"linkedServiceName": {
+					"referenceName": "sammsbackup",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"container": {
+						"type": "string"
+					},
+					"directory": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().directory",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().container",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/sammsbackup')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/CopyFilesfromMultipleContainers')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Scan the file path on your source storage store and get the container list.",
+				"activities": [
+					{
+						"name": "EnumerateContainersList",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "BinarySourceFileStore",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": {
+										"value": "@pipeline().parameters.SourceFileFolder",
+										"type": "Expression"
+									},
+									"directory": {
+										"value": "@pipeline().parameters.SourceFileDirectory",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true
+							}
+						}
+					},
+					{
+						"name": "ForEachContainer",
+						"description": "Get the container list from Metadata activity and then iterates each of them to Copy activity.",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "EnumerateContainersList",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('EnumerateContainersList').output.childItems",
+								"type": "Expression"
+							},
+							"batchCount": 4,
+							"activities": [
+								{
+									"name": "CopyOneContainer",
+									"description": "Copy each container from source storage store to destination store.",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true
+											}
+										},
+										"sink": {
+											"type": "BinarySink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings",
+												"copyBehavior": "PreserveHierarchy"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "BinarySourceFileStore",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@pipeline().parameters.SourceFileFolder",
+													"type": "Expression"
+												},
+												"directory": {
+													"value": "@concat(pipeline().parameters.SourceFileDirectory,'/',item().name)",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "BinarySinkFileStore",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@pipeline().parameters.DestinationFileFolder",
+													"type": "Expression"
+												},
+												"directory": {
+													"value": "@concat(pipeline().parameters.DestinationFileDirectory,'/',item().name)",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"SourceFileFolder": {
+						"type": "string",
+						"defaultValue": "sourcefolder"
+					},
+					"SourceFileDirectory": {
+						"type": "string",
+						"defaultValue": "subfolder"
+					},
+					"DestinationFileFolder": {
+						"type": "string",
+						"defaultValue": "destinationfolder"
+					},
+					"DestinationFileDirectory": {
+						"type": "string",
+						"defaultValue": "subfolder"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/BinarySourceFileStore')]",
+				"[concat(variables('factoryId'), '/datasets/BinarySinkFileStore')]"
+			]
+		}
+	]
+}

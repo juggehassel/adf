@@ -1,0 +1,166 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "dfmmsprd"
+		},
+		"AdventureWorksLT_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AdventureWorksLT'"
+		},
+		"AdventureworksDWLOCAL_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AdventureworksDWLOCAL'"
+		},
+		"CarsPlanesFiles_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'CarsPlanesFiles'"
+		},
+		"TaxiDB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'TaxiDB'"
+		},
+		"dlmms_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'dlmms'"
+		},
+		"sammsbackup_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'sammsbackup'"
+		},
+		"akvmmsdb_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://akvsmmsprd.vault.azure.net/"
+		},
+		"dlmms_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://sammsprd.dfs.core.windows.net"
+		},
+		"sammsbackup_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://sammsbackup.dfs.core.windows.net"
+		},
+		"sqlmmsprd_properties_typeProperties_connectionString_secretName": {
+			"type": "string",
+			"defaultValue": "mmsdb-login"
+		},
+		"EventFlag_properties_TriggerEventPipeLine_parameters_inputfilename": {
+			"type": "string",
+			"defaultValue": "event.csv"
+		},
+		"EventFlag_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/d55eff59-e246-4bd5-a62d-3f59330db1d1/resourceGroups/rgmmsprd/providers/Microsoft.Storage/storageAccounts/sammsprd"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AdventureWorksLT_connectionString": {
+						"value": "[parameters('AdventureWorksLT_connectionString')]"
+					},
+					"CarsPlanesFiles_connectionString": {
+						"value": "[parameters('CarsPlanesFiles_connectionString')]"
+					},
+					"TaxiDB_connectionString": {
+						"value": "[parameters('TaxiDB_connectionString')]"
+					},
+					"dlmms_accountKey": {
+						"value": "[parameters('dlmms_accountKey')]"
+					},
+					"sammsbackup_accountKey": {
+						"value": "[parameters('sammsbackup_accountKey')]"
+					},
+					"akvmmsdb_properties_typeProperties_baseUrl": {
+						"value": "[parameters('akvmmsdb_properties_typeProperties_baseUrl')]"
+					},
+					"dlmms_properties_typeProperties_url": {
+						"value": "[parameters('dlmms_properties_typeProperties_url')]"
+					},
+					"sammsbackup_properties_typeProperties_url": {
+						"value": "[parameters('sammsbackup_properties_typeProperties_url')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AdventureworksDWLOCAL_connectionString": {
+						"value": "[parameters('AdventureworksDWLOCAL_connectionString')]"
+					},
+					"sqlmmsprd_properties_typeProperties_connectionString_secretName": {
+						"value": "[parameters('sqlmmsprd_properties_typeProperties_connectionString_secretName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'ArmTemplate_0')]"
+			]
+		},
+		{
+			"name": "ArmTemplate_2",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_2.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"EventFlag_properties_TriggerEventPipeLine_parameters_inputfilename": {
+						"value": "[parameters('EventFlag_properties_TriggerEventPipeLine_parameters_inputfilename')]"
+					},
+					"EventFlag_properties_typeProperties_scope": {
+						"value": "[parameters('EventFlag_properties_typeProperties_scope')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'ArmTemplate_1')]"
+			]
+		}
+	]
+}

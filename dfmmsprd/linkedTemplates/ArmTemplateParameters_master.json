@@ -1,0 +1,51 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "dfmmsprd"
+		},
+		"AdventureWorksLT_connectionString": {
+			"value": ""
+		},
+		"AdventureworksDWLOCAL_connectionString": {
+			"value": ""
+		},
+		"CarsPlanesFiles_connectionString": {
+			"value": ""
+		},
+		"TaxiDB_connectionString": {
+			"value": ""
+		},
+		"dlmms_accountKey": {
+			"value": ""
+		},
+		"sammsbackup_accountKey": {
+			"value": ""
+		},
+		"akvmmsdb_properties_typeProperties_baseUrl": {
+			"value": "https://akvsmmsprd.vault.azure.net/"
+		},
+		"dlmms_properties_typeProperties_url": {
+			"value": "https://sammsprd.dfs.core.windows.net"
+		},
+		"sammsbackup_properties_typeProperties_url": {
+			"value": "https://sammsbackup.dfs.core.windows.net"
+		},
+		"sqlmmsprd_properties_typeProperties_connectionString_secretName": {
+			"value": "mmsdb-login"
+		},
+		"EventFlag_properties_TriggerEventPipeLine_parameters_inputfilename": {
+			"value": "event.csv"
+		},
+		"EventFlag_properties_typeProperties_scope": {
+			"value": "/subscriptions/d55eff59-e246-4bd5-a62d-3f59330db1d1/resourceGroups/rgmmsprd/providers/Microsoft.Storage/storageAccounts/sammsprd"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
