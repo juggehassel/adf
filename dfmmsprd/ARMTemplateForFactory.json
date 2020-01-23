@@ -2542,32 +2542,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/EveryMorning0800')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"runtimeState": "Stopped",
-				"pipelines": [],
-				"type": "ScheduleTrigger",
-				"typeProperties": {
-					"recurrence": {
-						"frequency": "Day",
-						"interval": 1,
-						"startTime": "2020-01-22T12:34:00Z",
-						"endTime": "2020-01-25T12:34:00Z",
-						"timeZone": "UTC",
-						"schedule": {
-							"hours": [
-								8
-							]
-						}
-					}
-				}
-			},
-			"dependsOn": []
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/TumblingWindow')]",
 			"type": "Microsoft.DataFactory/factories/triggers",
 			"apiVersion": "2018-06-01",
@@ -2799,6 +2773,45 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/BlobInputFolder')]",
 				"[concat(variables('factoryId'), '/datasets/ParameterTable')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Afternoonrun1345')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "Excercise1_Copy",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2020-01-23T12:40:00.000Z",
+						"endTime": "2020-01-24T12:40:00.000Z",
+						"timeZone": "UTC",
+						"schedule": {
+							"minutes": [
+								53
+							],
+							"hours": [
+								12
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/Excercise1_Copy')]"
 			]
 		}
 	]
