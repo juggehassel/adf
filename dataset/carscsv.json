@@ -5,6 +5,12 @@
 			"referenceName": "dlmms",
 			"type": "LinkedServiceReference"
 		},
+		"parameters": {
+			"inputfilename": {
+				"type": "string",
+				"defaultValue": "@pipeline().parameters.inputfilename"
+			}
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {

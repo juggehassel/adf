@@ -1,5 +1,5 @@
 {
-	"name": "inputfile",
+	"name": "outputfilecsv",
 	"properties": {
 		"linkedServiceName": {
 			"referenceName": "dlmms",
@@ -17,16 +17,41 @@
 			"location": {
 				"type": "AzureBlobFSLocation",
 				"fileName": {
-					"value": "@concat(dataset().inputfilename,'.csv')",
+					"value": "@concat(dataset().inputfilename,utcnow(),'.csv')",
 					"type": "Expression"
 				},
-				"fileSystem": "input"
+				"fileSystem": "output"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
 			"firstRowAsHeader": true,
 			"quoteChar": "\""
 		},
-		"schema": []
+		"schema": [
+			{
+				"name": "Make",
+				"type": "String"
+			},
+			{
+				"name": "Model",
+				"type": "String"
+			},
+			{
+				"name": "Type",
+				"type": "String"
+			},
+			{
+				"name": "Origin",
+				"type": "String"
+			},
+			{
+				"name": "DriveTrain",
+				"type": "String"
+			},
+			{
+				"name": "Length",
+				"type": "String"
+			}
+		]
 	}
 }
