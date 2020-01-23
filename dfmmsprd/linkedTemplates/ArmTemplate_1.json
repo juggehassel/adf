@@ -21,6 +21,388 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/ParameterTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TaxiDB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"tablename": {
+						"type": "string",
+						"defaultValue": "DimProducts"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().tablename",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TripData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TaxiDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "medallion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "hack_license",
+						"type": "nvarchar"
+					},
+					{
+						"name": "vendor_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "rate_code",
+						"type": "nvarchar"
+					},
+					{
+						"name": "store_and_fwd_flag",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pickup_datetime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "dropoff_datetime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "passenger_count",
+						"type": "nvarchar"
+					},
+					{
+						"name": "trip_time_in_secs",
+						"type": "nvarchar"
+					},
+					{
+						"name": "trip_distance",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pickup_longitude",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pickup_latitude",
+						"type": "nvarchar"
+					},
+					{
+						"name": "dropoff_longitude",
+						"type": "nvarchar"
+					},
+					{
+						"name": "dropoff_latitude",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "TripData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TripDataCSV')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "@concat(addhours(utcnow(),1),'.csv')",
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "tripdata.csv",
+							"type": "Expression"
+						},
+						"fileSystem": "taxidata"
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "medallion",
+						"type": "String"
+					},
+					{
+						"name": "hack_license",
+						"type": "String"
+					},
+					{
+						"name": "vendor_id",
+						"type": "String"
+					},
+					{
+						"name": "rate_code",
+						"type": "String"
+					},
+					{
+						"name": "store_and_fwd_flag",
+						"type": "String"
+					},
+					{
+						"name": "pickup_datetime",
+						"type": "String"
+					},
+					{
+						"name": "dropoff_datetime",
+						"type": "String"
+					},
+					{
+						"name": "passenger_count",
+						"type": "String"
+					},
+					{
+						"name": "trip_time_in_secs",
+						"type": "String"
+					},
+					{
+						"name": "trip_distance",
+						"type": "String"
+					},
+					{
+						"name": "pickup_longitude",
+						"type": "String"
+					},
+					{
+						"name": "pickup_latitude",
+						"type": "String"
+					},
+					{
+						"name": "dropoff_longitude",
+						"type": "String"
+					},
+					{
+						"name": "dropoff_latitude",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TripFaresSQL')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "TaxiDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "medallion",
+						"type": "nvarchar"
+					},
+					{
+						"name": "hack_license",
+						"type": "nvarchar"
+					},
+					{
+						"name": "vendor_id",
+						"type": "nvarchar"
+					},
+					{
+						"name": "pickup_datetime",
+						"type": "nvarchar"
+					},
+					{
+						"name": "payment_type",
+						"type": "nvarchar"
+					},
+					{
+						"name": "fare_amount",
+						"type": "nvarchar"
+					},
+					{
+						"name": "surcharge",
+						"type": "nvarchar"
+					},
+					{
+						"name": "mta_tax",
+						"type": "nvarchar"
+					},
+					{
+						"name": "tip_amount",
+						"type": "nvarchar"
+					},
+					{
+						"name": "tolls_amount",
+						"type": "nvarchar"
+					},
+					{
+						"name": "total_amount",
+						"type": "nvarchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "TripFares"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/carscsv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "cars.csv",
+						"fileSystem": "input"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Make",
+						"type": "String"
+					},
+					{
+						"name": "Model",
+						"type": "String"
+					},
+					{
+						"name": "Type",
+						"type": "String"
+					},
+					{
+						"name": "Origin",
+						"type": "String"
+					},
+					{
+						"name": "DriveTrain",
+						"type": "String"
+					},
+					{
+						"name": "Length",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/carscsvoutput')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "output"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/moviesDBcsv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "dlmms",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "moviesDB.csv",
+						"fileSystem": "sample-data"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "movie",
+						"type": "String"
+					},
+					{
+						"name": "title",
+						"type": "String"
+					},
+					{
+						"name": "genres",
+						"type": "String"
+					},
+					{
+						"name": "year",
+						"type": "String"
+					},
+					{
+						"name": "Rating",
+						"type": "String"
+					},
+					{
+						"name": "Rotton Tomato",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/tripdwtable')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -108,188 +490,154 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/MoviesSink')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
+			"name": "[concat(parameters('factoryName'), '/CopyFilesfromMultipleContainers')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"linkedServiceName": {
-					"referenceName": "dlmms",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "DelimitedText",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"fileSystem": "sample-data"
-					},
-					"columnDelimiter": ",",
-					"escapeChar": "\\",
-					"firstRowAsHeader": true,
-					"quoteChar": "\""
-				},
-				"schema": [
+				"description": "Scan the file path on your source storage store and get the container list.",
+				"activities": [
 					{
-						"name": "movie",
-						"type": "String"
-					},
-					{
-						"name": "title",
-						"type": "String"
-					},
-					{
-						"name": "genres",
-						"type": "String"
-					},
-					{
-						"name": "year",
-						"type": "String"
-					},
-					{
-						"name": "Rating",
-						"type": "String"
-					},
-					{
-						"name": "Rotton Tomato",
-						"type": "String"
-					}
-				]
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/BlobInputFolder')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "CarsPlanesFiles",
-					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"filename": {
-						"type": "string",
-						"defaultValue": "DimProducts.csv"
-					}
-				},
-				"annotations": [],
-				"type": "DelimitedText",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobStorageLocation",
-						"fileName": {
-							"value": "@dataset().filename",
-							"type": "Expression"
+						"name": "EnumerateContainersList",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
 						},
-						"folderPath": "SampleData/AW",
-						"container": "mycontainer"
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "BinarySourceFileStore",
+								"type": "DatasetReference",
+								"parameters": {
+									"container": {
+										"value": "@pipeline().parameters.SourceFileFolder",
+										"type": "Expression"
+									},
+									"directory": {
+										"value": "@pipeline().parameters.SourceFileDirectory",
+										"type": "Expression"
+									}
+								}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true
+							}
+						}
 					},
-					"columnDelimiter": "|",
-					"encodingName": "UTF-8",
-					"escapeChar": "\\",
-					"quoteChar": "\""
-				},
-				"schema": []
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/ParameterTable')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "TaxiDB",
-					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"tablename": {
-						"type": "string",
-						"defaultValue": "DimProducts"
-					}
-				},
-				"annotations": [],
-				"type": "AzureSqlTable",
-				"schema": [],
-				"typeProperties": {
-					"schema": "dbo",
-					"table": {
-						"value": "@dataset().tablename",
-						"type": "Expression"
-					}
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/BinarySourceFileStore')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Connection to your source data store.",
-				"linkedServiceName": {
-					"referenceName": "dlmms",
-					"type": "LinkedServiceReference"
-				},
-				"parameters": {
-					"container": {
-						"type": "string"
-					},
-					"directory": {
-						"type": "string"
-					}
-				},
-				"annotations": [],
-				"type": "Binary",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"folderPath": {
-							"value": "@dataset().directory",
-							"type": "Expression"
-						},
-						"fileSystem": {
-							"value": "@dataset().container",
-							"type": "Expression"
+					{
+						"name": "ForEachContainer",
+						"description": "Get the container list from Metadata activity and then iterates each of them to Copy activity.",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "EnumerateContainersList",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('EnumerateContainersList').output.childItems",
+								"type": "Expression"
+							},
+							"batchCount": 4,
+							"activities": [
+								{
+									"name": "CopyOneContainer",
+									"description": "Copy each container from source storage store to destination store.",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true
+											}
+										},
+										"sink": {
+											"type": "BinarySink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings",
+												"copyBehavior": "PreserveHierarchy"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "BinarySourceFileStore",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@pipeline().parameters.SourceFileFolder",
+													"type": "Expression"
+												},
+												"directory": {
+													"value": "@concat(pipeline().parameters.SourceFileDirectory,'/',item().name)",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "BinarySinkFileStore",
+											"type": "DatasetReference",
+											"parameters": {
+												"container": {
+													"value": "@pipeline().parameters.DestinationFileFolder",
+													"type": "Expression"
+												},
+												"directory": {
+													"value": "@concat(pipeline().parameters.DestinationFileDirectory,'/',item().name)",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
 						}
 					}
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/BinarySinkFileStore')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Connection to your destination data store.",
-				"linkedServiceName": {
-					"referenceName": "sammsbackup",
-					"type": "LinkedServiceReference"
-				},
+				],
 				"parameters": {
-					"container": {
-						"type": "string"
+					"SourceFileFolder": {
+						"type": "string",
+						"defaultValue": "sourcefolder"
 					},
-					"directory": {
-						"type": "string"
+					"SourceFileDirectory": {
+						"type": "string",
+						"defaultValue": "subfolder"
+					},
+					"DestinationFileFolder": {
+						"type": "string",
+						"defaultValue": "destinationfolder"
+					},
+					"DestinationFileDirectory": {
+						"type": "string",
+						"defaultValue": "subfolder"
 					}
 				},
-				"annotations": [],
-				"type": "Binary",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"folderPath": {
-							"value": "@dataset().directory",
-							"type": "Expression"
-						},
-						"fileSystem": {
-							"value": "@dataset().container",
-							"type": "Expression"
-						}
-					}
-				}
+				"annotations": []
 			},
 			"dependsOn": []
 		},
@@ -404,6 +752,74 @@
 				"annotations": []
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Excercise1_Copy')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"parallelCopies": 1,
+							"dataIntegrationUnits": 2
+						},
+						"inputs": [
+							{
+								"referenceName": "carscsv",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "carscsvoutput",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"concurrency": 1,
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/carscsv')]",
+				"[concat(variables('factoryId'), '/datasets/carscsvoutput')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/TriggerEventPipeLine')]",
@@ -816,393 +1232,9 @@
 				}
 			},
 			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/TripDataCSV')]",
+				"[concat(variables('factoryId'), '/datasets/TripFaresSQL')]",
 				"[concat(variables('factoryId'), '/datasets/tripdwtable')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/MoviesSample')]",
-			"type": "Microsoft.DataFactory/factories/dataflows",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "https://docs.microsoft.com/en-us/azure/data-factory/tutorial-data-flow ",
-				"type": "MappingDataFlow",
-				"typeProperties": {
-					"sources": [
-						{
-							"dataset": {
-								"referenceName": "moviesDBcsv",
-								"type": "DatasetReference"
-							},
-							"name": "MoviesDB",
-							"typeProperties": {}
-						}
-					],
-					"sinks": [
-						{
-							"dataset": {
-								"referenceName": "MoviesSink",
-								"type": "DatasetReference"
-							},
-							"name": "sink1"
-						}
-					],
-					"transformations": [
-						{
-							"name": "Filter1"
-						},
-						{
-							"name": "AggregateComedyRatings"
-						}
-					],
-					"script": "\n\nsource(output(\n\t\tmovie as string,\n\t\ttitle as string,\n\t\tgenres as string,\n\t\tyear as string,\n\t\tRating as string,\n\t\t{Rotton Tomato} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false) ~> MoviesDB\nMoviesDB filter(toInteger(year) >= 1910 && toInteger(year) <= 2000 && rlike(genres, 'Comedy')) ~> Filter1\nFilter1 aggregate(groupBy(year),\n\tAggregateComedyRatings = avg(toInteger(Rating))) ~> AggregateComedyRatings\nAggregateComedyRatings sink(input(\n\t\tmovie as string,\n\t\ttitle as string,\n\t\tgenres as string,\n\t\tyear as string,\n\t\tRating as string,\n\t\t{Rotton Tomato} as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionBy('hash', 1)) ~> sink1"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/MoviesSink')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/scdT1Generic')]",
-			"type": "Microsoft.DataFactory/factories/dataflows",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "This is a generalized Slowly Changing Dimension Type 1 that is parameterized to work against different dimension tables and dimension types.",
-				"type": "MappingDataFlow",
-				"typeProperties": {
-					"sources": [
-						{
-							"dataset": {
-								"referenceName": "BlobInputFolder",
-								"type": "DatasetReference"
-							},
-							"name": "NewMembers1",
-							"typeProperties": {}
-						},
-						{
-							"dataset": {
-								"referenceName": "ParameterTable",
-								"type": "DatasetReference"
-							},
-							"name": "ExistingMembers",
-							"typeProperties": {}
-						},
-						{
-							"dataset": {
-								"referenceName": "ParameterTable",
-								"type": "DatasetReference"
-							},
-							"name": "SetMaxKey",
-							"typeProperties": {}
-						}
-					],
-					"sinks": [
-						{
-							"dataset": {
-								"referenceName": "ParameterTable",
-								"type": "DatasetReference"
-							},
-							"name": "sink1"
-						},
-						{
-							"dataset": {
-								"referenceName": "ParameterTable",
-								"type": "DatasetReference"
-							},
-							"name": "sink2"
-						}
-					],
-					"transformations": [
-						{
-							"name": "PickCols1"
-						},
-						{
-							"name": "PickCols2"
-						},
-						{
-							"name": "Lookup1"
-						},
-						{
-							"name": "checkMatch"
-						},
-						{
-							"name": "UpdateSetAttrs"
-						},
-						{
-							"name": "MapDrifted1",
-							"description": "Creates an explicit mapping for each drifted column"
-						},
-						{
-							"name": "isMatching"
-						},
-						{
-							"name": "AlterRow1"
-						},
-						{
-							"name": "SurrogateKey1"
-						},
-						{
-							"name": "InsertSetAttrs"
-						},
-						{
-							"name": "Join1"
-						},
-						{
-							"name": "SetCols"
-						}
-					],
-					"script": "\nparameters{\n\tdimname as string ('dimprods'),\n\tkeycol as string ('ProductNumber'),\n\tSurrogateKey as string ('ProductID'),\n\ttablename as string ('DimProducts')\n}\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinferDriftedColumnTypes: true) ~> NewMembers1\nsource(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinferDriftedColumnTypes: true,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ExistingMembers\nsource(output(\n\t\tmaxsk as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tquery: (concat('select max(',$SurrogateKey,') as maxsk from ',$tablename)),\n\tformat: 'query') ~> SetMaxKey\nNewMembers1 derive(businesskey1 = toString(byPosition(2)),\n\t\tname1 = toString(byPosition(6))) ~> PickCols1\nExistingMembers derive(each(match(instr(name,'ID')>0), 'surrogatekey2' = toInteger($$)),\n\t\teach(match(instr(name,'Number')>0), 'businesskey2' = toString($$))) ~> PickCols2\nPickCols1, MapDrifted1 lookup(businesskey1 == businesskey2,\n\tbroadcast: 'none')~> Lookup1\nisMatching split(match,\n\tdisjoint: false) ~> checkMatch@(isMatch, noMatch)\ncheckMatch@isMatch derive({_LastUpdated} = currentTimestamp(),\n\t\tDWhash = sha2(256,name1)) ~> UpdateSetAttrs\nPickCols2 derive(ProductID = toInteger(byName('ProductID')),\n\t\tName = toString(byName('Name')),\n\t\tProductNumber = toString(byName('ProductNumber')),\n\t\tColor = toString(byName('Color')),\n\t\tStandardCost = toDecimal(byName('StandardCost')),\n\t\tListPrice = toDecimal(byName('ListPrice')),\n\t\t{_Inserted} = toTimestamp(byName('_Inserted')),\n\t\t{_LastUpdated} = toTimestamp(byName('_LastUpdated')),\n\t\tDWhash = toString(byName('DWhash')),\n\t\tsurrogatekey2 = toInteger(byName('surrogatekey2')),\n\t\tbusinesskey2 = toString(byName('businesskey2'))) ~> MapDrifted1\nLookup1 derive(match = isMatch()) ~> isMatching\nUpdateSetAttrs alterRow(updateIf(true())) ~> AlterRow1\ncheckMatch@noMatch keyGenerate(output(surrogatekey2 as long),\n\tstartAt: 1L) ~> SurrogateKey1\nJoin1 derive(surrogatekey2 = surrogatekey2 + maxsk,\n\t\t{_LastUpdated} = currentTimestamp(),\n\t\t{_Inserted} = currentTimestamp(),\n\t\tDWhash = sha2(256,name1)) ~> InsertSetAttrs\nSurrogateKey1, SetMaxKey join(true(),\n\tjoinType:'cross',\n\tbroadcast: 'none')~> Join1\nInsertSetAttrs select(mapColumn(\n\t\tName = name1,\n\t\t{_Inserted},\n\t\t{_LastUpdated},\n\t\teach(match(name=='surrogatekey2'),\n\t\t\t$SurrogateKey+'' = $$),\n\t\teach(match(name=='businesskey1'),\n\t\t\t$keycol+'' = $$)\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SetCols\nAlterRow1 sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:[($keycol)],\n\tformat: 'table',\n\tmapColumn(\n\t\teach(patternMatch(`.*[^_]$`))\n\t),\n\tpartitionBy('hash', 1)) ~> sink1\nSetCols sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table') ~> sink2"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/BlobInputFolder')]",
-				"[concat(variables('factoryId'), '/datasets/ParameterTable')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/CopyFilesfromMultipleContainers')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "Scan the file path on your source storage store and get the container list.",
-				"activities": [
-					{
-						"name": "EnumerateContainersList",
-						"type": "GetMetadata",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "7.00:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"dataset": {
-								"referenceName": "BinarySourceFileStore",
-								"type": "DatasetReference",
-								"parameters": {
-									"container": {
-										"value": "@pipeline().parameters.SourceFileFolder",
-										"type": "Expression"
-									},
-									"directory": {
-										"value": "@pipeline().parameters.SourceFileDirectory",
-										"type": "Expression"
-									}
-								}
-							},
-							"fieldList": [
-								"childItems"
-							],
-							"storeSettings": {
-								"type": "AzureBlobFSReadSettings",
-								"recursive": true
-							}
-						}
-					},
-					{
-						"name": "ForEachContainer",
-						"description": "Get the container list from Metadata activity and then iterates each of them to Copy activity.",
-						"type": "ForEach",
-						"dependsOn": [
-							{
-								"activity": "EnumerateContainersList",
-								"dependencyConditions": [
-									"Succeeded"
-								]
-							}
-						],
-						"userProperties": [],
-						"typeProperties": {
-							"items": {
-								"value": "@activity('EnumerateContainersList').output.childItems",
-								"type": "Expression"
-							},
-							"batchCount": 4,
-							"activities": [
-								{
-									"name": "CopyOneContainer",
-									"description": "Copy each container from source storage store to destination store.",
-									"type": "Copy",
-									"dependsOn": [],
-									"policy": {
-										"timeout": "7.00:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"source": {
-											"type": "BinarySource",
-											"storeSettings": {
-												"type": "AzureBlobFSReadSettings",
-												"recursive": true
-											}
-										},
-										"sink": {
-											"type": "BinarySink",
-											"storeSettings": {
-												"type": "AzureBlobFSWriteSettings",
-												"copyBehavior": "PreserveHierarchy"
-											}
-										},
-										"enableStaging": false
-									},
-									"inputs": [
-										{
-											"referenceName": "BinarySourceFileStore",
-											"type": "DatasetReference",
-											"parameters": {
-												"container": {
-													"value": "@pipeline().parameters.SourceFileFolder",
-													"type": "Expression"
-												},
-												"directory": {
-													"value": "@concat(pipeline().parameters.SourceFileDirectory,'/',item().name)",
-													"type": "Expression"
-												}
-											}
-										}
-									],
-									"outputs": [
-										{
-											"referenceName": "BinarySinkFileStore",
-											"type": "DatasetReference",
-											"parameters": {
-												"container": {
-													"value": "@pipeline().parameters.DestinationFileFolder",
-													"type": "Expression"
-												},
-												"directory": {
-													"value": "@concat(pipeline().parameters.DestinationFileDirectory,'/',item().name)",
-													"type": "Expression"
-												}
-											}
-										}
-									]
-								}
-							]
-						}
-					}
-				],
-				"parameters": {
-					"SourceFileFolder": {
-						"type": "string",
-						"defaultValue": "sourcefolder"
-					},
-					"SourceFileDirectory": {
-						"type": "string",
-						"defaultValue": "subfolder"
-					},
-					"DestinationFileFolder": {
-						"type": "string",
-						"defaultValue": "destinationfolder"
-					},
-					"DestinationFileDirectory": {
-						"type": "string",
-						"defaultValue": "subfolder"
-					}
-				},
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/BinarySourceFileStore')]",
-				"[concat(variables('factoryId'), '/datasets/BinarySinkFileStore')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/CopyEmpFileToDb')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "ac_copyfiletoempDb",
-						"type": "Copy",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "7.00:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [
-							{
-								"name": "Source",
-								"value": "salesdata/sales/2020/202001/emp.txt"
-							},
-							{
-								"name": "Destination",
-								"value": "dbo.emp"
-							}
-						],
-						"typeProperties": {
-							"source": {
-								"type": "DelimitedTextSource",
-								"storeSettings": {
-									"type": "AzureBlobFSReadSettings",
-									"recursive": false,
-									"enablePartitionDiscovery": false
-								},
-								"formatSettings": {
-									"type": "DelimitedTextReadSettings",
-									"skipLineCount": 0
-								}
-							},
-							"sink": {
-								"type": "SqlServerSink"
-							},
-							"enableStaging": false,
-							"enableSkipIncompatibleRow": true,
-							"translator": {
-								"type": "TabularTranslator",
-								"mappings": [
-									{
-										"source": {
-											"type": "String",
-											"ordinal": 1
-										},
-										"sink": {
-											"name": "FirstName"
-										}
-									},
-									{
-										"source": {
-											"type": "String",
-											"ordinal": 2
-										},
-										"sink": {
-											"name": "LastName",
-											"type": "String"
-										}
-									}
-								]
-							}
-						},
-						"inputs": [
-							{
-								"referenceName": "EmpTxt",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						],
-						"outputs": [
-							{
-								"referenceName": "EmpTable",
-								"type": "DatasetReference",
-								"parameters": {}
-							}
-						]
-					}
-				],
-				"annotations": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/EmpTable')]"
 			]
 		}
 	]
