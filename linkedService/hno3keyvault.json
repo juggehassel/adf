@@ -1,0 +1,11 @@
+{
+	"name": "hno3keyvault",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://hno3keyvault.vault.azure.net/"
+		}
+	}
+}

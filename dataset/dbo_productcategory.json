@@ -1,0 +1,42 @@
+{
+	"name": "dbo_productcategory",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "exempeldb",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "ProductCategoryID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "ParentProductCategoryID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Name",
+				"type": "nvarchar"
+			},
+			{
+				"name": "rowguid",
+				"type": "nvarchar"
+			},
+			{
+				"name": "ModifiedDate",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "productcategory"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
